@@ -1,7 +1,7 @@
 
 UNAME=$(shell uname)
 
-SRCS=runset.cpp options.cpp utils.cpp
+SRCS=runset.cpp
 
 ifeq ($(findstring NT-, $(UNAME)),)
 EXEXT=
@@ -45,8 +45,6 @@ TARGET=${TARGET_DIR}/runset${EXEXT}
 all : ${TARGET}
 
 gcc : ${TARGET}
-
-options.cpp : version.h
 
 # Génération du version.h intégré dans l'appli
 version.h : version_check.txt
