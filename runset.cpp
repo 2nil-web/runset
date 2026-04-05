@@ -35,20 +35,65 @@ int str_to_sw(std::wstring s)
 
   return SW_HIDE;
 }
+struct ScreenArray {
+  std::vector<RECT> Monitors;
+  POINT max_work_pt = { 0, 0 }, max_monitor_pt = { 0, 0 };
+  std::wstringstream ss;
+  
+   static BOOL CALLBACK MonitorEnumProc(HMONITOR monitor, HDC, LPRECT rect, LPARAM data) {
+    MONITORINFOEX mi = {};
+    
+    mi.cbSize = sizeof(MONITORINFOEX);
+    GetMonitorInfo(monitor, &mi);
+    auto p = reinterpret_cast<ScreenArray *>(data);
+    
+    if (mi.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) {
+      p->ss << "Using mirroring driver for multi-screen." << std::endl;
+    } else {
+      p->Monitors.push_back(*rect);
+      p->ss << "Work area rectangle for ";
+      if (mi.dwFlags == MONITORINFOF_PRIMARY) p->ss << "primary ";
+      p->ss << mi.szDevice << " is : (" << mi.rcWork.left << ", " << mi.rcWork.top << ", " << mi.rcWork.right << ", " << mi.rcWork.bottom << ").";
 
-void get_work_area()
+      p->ss << " And the whole display rectangle for this monitor is : (" << mi.rcMonitor.left << ", " << mi.rcMonitor.top << ", " << mi.rcMonitor.right << ", " << mi.rcMonitor.bottom << ").";
+      p-> ss << std::endl;
+
+      if (p->max_work_pt.x < mi.rcWork.right) p->max_work_pt.x = mi.rcWork.right;
+      if (p->max_work_pt.y < mi.rcWork.bottom) p->max_work_pt.y = mi.rcWork.bottom;
+
+      if (p->max_monitor_pt.x < mi.rcMonitor.right) p->max_monitor_pt.x = mi.rcMonitor.right;
+      if (p->max_monitor_pt.y < mi.rcMonitor.bottom) p->max_monitor_pt.y = mi.rcMonitor.bottom;
+    }
+    return TRUE;
+  }
+  
+  ScreenArray() {
+    Monitors.clear();
+    EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)this);
+  }
+
+  void DisplayInfo() {
+    std::wcout << ss.str();
+    std::cout << "Max work area surrounding the whole set of area, has the following size: (" << max_work_pt.x << ", " << max_work_pt.y << ").";
+    std::cout << " And the max display area surrounding the whole set of monitor, has the following size: (" << max_monitor_pt.x << ", " << max_monitor_pt.y << ")." << std::endl;
+  }
+};
+
+void correct_geometry(DWORD& x, DWORD& y, DWORD& w, DWORD& h)
 {
- //BOOL SystemParametersInfoW( [in] UINT uiAction, [in] UINT uiParam, [in, out] PVOID pvParam, [in] UINT fWinIni);
- RECT rc;
-  SystemParametersInfo(SPI_GETWORKAREA, 0, &rc,0);
-  std::cout << "Work are: (" << rc.left << ", " << rc.top << ", " << rc.right << ", " << rc.bottom << ')' << std::endl;
+  ScreenArray myAray;
+  if (w > (DWORD)myAray.max_work_pt.x-20) w=myAray.max_work_pt.x;
+  if (x > (DWORD)myAray.max_work_pt.y-20) x=myAray.max_work_pt.x-w;
+  if (h > (DWORD)myAray.max_work_pt.x-20) h=myAray.max_work_pt.y;
+  if (y > (DWORD)myAray.max_work_pt.y-20) y=myAray.max_work_pt.y-w;
 }
 
 void handle_window(HWND hwnd, int x, int y, int w, int h, int show_mode)
 {
   ShowWindow(hwnd, show_mode);
   if (show_mode == SW_NORMAL) {
-    // Should control if the position and size are compatible with the work area
+    // Control if the position and size are compatible with the work area
+    // If position doesn't stay into the max possible display area then reduce it to allow the display of the whole window width and height
     MoveWindow(hwnd, x, y, w, h, true);
     SetForegroundWindow(hwnd);
   }
@@ -72,7 +117,6 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM /*lParam*/)
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-  get_work_area();
   int argc;
   LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   std::vector<std::filesystem::path> args = std::vector<std::filesystem::path>(argv, argv + argc);
@@ -123,6 +167,8 @@ This program may only works correctly with gui apps.
       }
     }
   }
+
+  correct_geometry(si.dwX, si.dwY, si.dwXSize, si.dwYSize);
 
   if (!sflags.empty())
     ss << std::endl << "flags: (" << sflags << ") = " << si.dwFlags;
