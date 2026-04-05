@@ -10,8 +10,10 @@
 
 #include <windows.h>
 
-// Evolutions à envisager :
-//  Combiner ce petit outil avec AltEnter pour avoir une fenêtre "projet" permettant de regrouper des applis et les rappeler et mettre sur le devant avec un raccourci clavier
+// Idées :
+//  Combiner ce petit outil avec AltEnter pour avoir une petite fenêtre "projet" permettant de regrouper différentes configuration d'applis pour les rappeler et mettre sur le devant avec un raccourci clavier
+//  Appeler tout ça "MINIDE" : MINIDE Is No IDE
+//  Le refaire avec FLTK pour avoir un truc multiplatforme ...
 
 std::wstring to_lower(const std::wstring s)
 {
