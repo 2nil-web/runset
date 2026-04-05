@@ -10,6 +10,9 @@
 
 #include <windows.h>
 
+// Evolutions à envisager :
+// Ajouter des shortcuts
+
 std::wstring to_lower(const std::wstring s)
 {
   std::wstring d = s;
@@ -33,10 +36,19 @@ int str_to_sw(std::wstring s)
   return SW_HIDE;
 }
 
+void get_work_area()
+{
+ //BOOL SystemParametersInfoW( [in] UINT uiAction, [in] UINT uiParam, [in, out] PVOID pvParam, [in] UINT fWinIni);
+ RECT rc;
+  SystemParametersInfo(SPI_GETWORKAREA, 0, &rc,0);
+  std::cout << "Work are: (" << rc.left << ", " << rc.top << ", " << rc.right << ", " << rc.bottom << ')' << std::endl;
+}
+
 void handle_window(HWND hwnd, int x, int y, int w, int h, int show_mode)
 {
   ShowWindow(hwnd, show_mode);
   if (show_mode == SW_NORMAL) {
+    // Should control if the position and size are compatible with the work area
     MoveWindow(hwnd, x, y, w, h, true);
     SetForegroundWindow(hwnd);
   }
@@ -60,6 +72,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM /*lParam*/)
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+  get_work_area();
   int argc;
   LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   std::vector<std::filesystem::path> args = std::vector<std::filesystem::path>(argv, argv + argc);
