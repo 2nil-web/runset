@@ -79,21 +79,25 @@ struct ScreenArray {
   }
 };
 
-void correct_geometry(DWORD& x, DWORD& y, DWORD& w, DWORD& h)
+void correct_geometry(int& x, int& y, int& w, int& h)
 {
-  ScreenArray myAray;
-  if (w > (DWORD)myAray.max_work_pt.x-20) w=myAray.max_work_pt.x;
-  if (x > (DWORD)myAray.max_work_pt.y-20) x=myAray.max_work_pt.x-w;
-  if (h > (DWORD)myAray.max_work_pt.x-20) h=myAray.max_work_pt.y;
-  if (y > (DWORD)myAray.max_work_pt.y-20) y=myAray.max_work_pt.y-w;
+  ScreenArray myArray;
+  //myArray.DisplayInfo();
+  // Correct size first
+  if (w > myArray.max_work_pt.x) w=myArray.max_work_pt.x;
+  if (h > myArray.max_work_pt.y) h=myArray.max_work_pt.y;
+
+  // Then correct position by taking into account the size
+  if (x < 0) x=0;
+  if (y < 0) y=0;
+  if (x > myArray.max_work_pt.x-60) x=myArray.max_work_pt.x-w;
+  if (y > myArray.max_work_pt.y-60) y=myArray.max_work_pt.y-h;
 }
 
 void handle_window(HWND hwnd, int x, int y, int w, int h, int show_mode)
 {
   ShowWindow(hwnd, show_mode);
   if (show_mode == SW_NORMAL) {
-    // Control if the position and size are compatible with the work area
-    // If position doesn't stay into the max possible display area then reduce it to allow the display of the whole window width and height
     MoveWindow(hwnd, x, y, w, h, true);
     SetForegroundWindow(hwnd);
   }
@@ -142,21 +146,23 @@ This program may only works correctly with gui apps.
   std::wstringstream ss;
   ss << "Command: " << args[1];
 
+  int x=0, y=0, w, h;
+
   if (args.size() >= 3)
   {
-    si.dwX = std::stoi(args[2]);
+    x = std::stoi(args[2]);
     si.dwFlags |= STARTF_USEPOSITION;
     sflags = L"STARTF_USEPOSITION";
 
-    if (args.size() >= 4) si.dwY = std::stoi(args[3]);
+    if (args.size() >= 4) y = std::stoi(args[3]);
 
     if (args.size() >= 5)
     {
-      si.dwXSize = std::stoi(args[4]);
+      w = std::stoi(args[4]);
       si.dwFlags |= STARTF_USESIZE;
       sflags += L" | STARTF_USESIZE";
 
-      if (args.size() >= 6) si.dwYSize = std::stoi(args[5]);
+      if (args.size() >= 6) h = std::stoi(args[5]);
       if (args.size() >= 7)
       {
         si.dwFlags |= STARTF_USESHOWWINDOW;
@@ -168,7 +174,11 @@ This program may only works correctly with gui apps.
     }
   }
 
-  correct_geometry(si.dwX, si.dwY, si.dwXSize, si.dwYSize);
+  correct_geometry(x, y, w, h);
+  si.dwX=(DWORD)x;
+  si.dwY=(DWORD)y;
+  si.dwXSize=(DWORD)w;
+  si.dwYSize=(DWORD)h;
 
   if (!sflags.empty())
     ss << std::endl << "flags: (" << sflags << ") = " << si.dwFlags;
