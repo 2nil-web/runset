@@ -11,7 +11,7 @@
 #include <windows.h>
 
 // Evolutions à envisager :
-// Ajouter des shortcuts
+//  Combiner ce petit outil avec AltEnter pour avoir une fenêtre "projet" permettant de regrouper des applis et les rappeler et mettre sur le devant avec un raccourci clavier
 
 std::wstring to_lower(const std::wstring s)
 {
